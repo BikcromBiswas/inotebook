@@ -3,54 +3,126 @@ import NoteContext from './Notecontext'
 import { useState } from 'react'
 const NoteState = (props)=>
 {
-    let initialnotes = [{
-        "_id": "64f3110a7d2eb293860791de",
-        "user": "64e5ebf0ccfd3bed6b2dd5cc",
-        "title": "web development",
-        "description": "How to start development",
-        "tag": "code",
-        "date": "2023-09-02T10:40:10.985Z",
-        "__v": 0
-      },
-      {
-        "_id": "64f314f4a85aa4ce1f7806d5",
-        "user": "64e5ebf0ccfd3bed6b2dd5cc",
-        "title": "web development",
-        "description": "How to start development",
-        "tag": "code",
-        "date": "2023-09-02T10:56:52.742Z",
-        "__v": 0
-      },
-      {
-        "_id": "64f3151c576ff51cd76faf4a",
-        "user": "64e5ebf0ccfd3bed6b2dd5cc",
-        "title": "web development",
-        "description": "How to start development",
-        "tag": "code",
-        "date": "2023-09-02T10:57:32.894Z",
-        "__v": 0
-      },
-      {
-        "_id": "64f315349542779d82576fbb",
-        "user": "64e5ebf0ccfd3bed6b2dd5cc",
-        "title": "web development",
-        "description": "How to start development",
-        "tag": "code",
-        "date": "2023-09-02T10:57:56.710Z",
-        "__v": 0
-      },
-      {
-        "_id": "64f3196b1adf07efbc28efce",
-        "user": "64e5ebf0ccfd3bed6b2dd5cc",
-        "title": "To check the  note check point",
-        "description": "we are going to check whether this end point is working or not",
-        "tag": "fake tag",
-        "date": "2023-09-02T11:15:55.232Z",
-        "__v": 0
-      }];
-    const [note,setNote ]  = useState(initialnotes)
+  console.log("calling no of times")
+    let initialnotes = [];
+
+    // ​‌‌‍⁡⁢⁢⁣STATE OF COMPONENT⁡​
+    let [notes,setNote ]  = useState(initialnotes)
+
+    //STATE OF MIDDLE COMPONENT
+    let [load , setload] = useState(false);
+
+    let host = 'http://localhost:5000'
+    //funtion to calcualte the length of the notes
+    
+    //​‌‍‌⁡⁢⁣⁢FETCH ALL NOTES⁡​
+    const getNotes =async ()=>
+    {
+      
+      //​‌‍‌API CALLS​
+      setload(true)
+
+      const url = host+`/api/notes/fetchallnotes`;
+
+      const response = await fetch(url, {
+        method: "GET", 
+        headers: {
+          "Content-Type": "application/json",
+          "auth-token":localStorage.getItem('token')
+        },
+        })
+        let json = await response.json()
+        setload(false)
+        setNote(json)
+        console.log(json)
+    }
+    // ⁡⁢⁣⁢​‌‍‌ADDING NOTE​⁡
+    const addNote =async (description,title,tag)=>
+    {
+      console.log("title\n" + title +"\ndescription\n" + description + "\ntag\n" + tag);
+
+      //​‌‍‌API CALLS​
+      const url = host+`/api/notes/addnote`
+      console.log("url\n"+url)
+      const data = {
+        "title":title,
+        "description":description,
+        "tag":tag
+      }
+      const response = await fetch(url, {
+        method: "POST", 
+        headers: {
+          "Content-Type": "application/json",
+          "auth-token":localStorage.getItem('token')
+        },
+        body: JSON.stringify(data),
+        }).then(res=>
+          {
+             return res.json() // //console.log(res.json());
+        })
+        setNote(notes.concat(response))
+        console.log(response)
+    }
+    // ⁡⁢⁣⁢​‌‍‌DELETING NOTE​⁡
+    const deleteNote = async(noteid)=>
+    {
+      //TODO TO DELETE A NOTE
+      console.log("noteId to delete\n" + noteid)
+      console.log("your file is deleted")
+      //function to delete a note from database
+      const url = `${host}/api/notes/deletenote/${noteid}`
+      const response = await fetch(url, {
+        method: "DELETE", 
+        headers: {
+          "Content-Type": "application/json",
+          "auth-token":localStorage.getItem('token')
+        }
+        })
+        console.log(await response.json())
+      const nwnote = notes.filter((note)=> noteid !== note._id)
+      setNote(nwnote);
+    }
+    // ​‌‍‌⁡⁢⁣⁢EDIT⁡​ ⁡⁢⁣⁢​‌‍‌NOTE​⁡ 
+    const editNote=async(noteid, title, tag, description)=>
+    {
+      //API call
+      const url = `${host}/api/notes/updatenote/${noteid }`
+      console.log("url\n" + url)
+      console.log("noteid\n" + noteid)  
+      console.log("title\n" + title +"\ndescription\n" + description + "\ntag\n" + tag);
+      const data = {
+        "title":title,
+        "description":description,
+        "tag":tag
+      }
+      const response = await fetch(url, {
+        method: "PUT", // *GET, POST, PUT, DELETE, etc.
+        headers: {
+          "Content-Type": "application/json",
+          "auth-token":localStorage.getItem('token')
+        },
+        body: JSON.stringify(data),
+      }).then(res=>
+        {
+          //console.log(res)
+        });
+
+      //console.log("editfunction\n" + response)
+      //LOGIC to edit in
+      // for(let index=0 ; index< notes.length ;index++)
+      // {
+      //   const element =  notes[index];
+      //   if(element._id ===  noteid)
+      //   {
+      //     element.title = title;
+      //     element.description = description;
+      //     element.tag = tag;
+      //   }
+      // }
+      getNotes()
+    }
     return (
-        <NoteContext.Provider value={{note,setNote}}>
+        <NoteContext.Provider value={{notes,addNote,deleteNote,editNote,getNotes,load}}>
             {props.children}
         </NoteContext.Provider>
     )

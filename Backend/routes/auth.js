@@ -11,21 +11,21 @@ const User = require('../models/User')
 router.post('/createuser', [
   body('email').isEmail(),
   body('name').isLength({ min: 3, max: 15 }),
-  body('password').isLength({ min: 8 }).withMessage("message must be 8 charachter long").matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).+$/, "i").withMessage('Password should be combination of one uppercase , one lower case, one special char, one digit and min 8 , max 20 char long')
+  body('password').isLength({ min: 8 }).withMessage("2message must be 8 charachter long").matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).+$/, "i").withMessage('Password should be combination of one uppercase , one lower case, one special char, one digit and min 8 , max 20 char long')
 ], async (req, res) => {
   const errors = validationResult(req);
 
-
+  let success = false;
   //If on creating user some errors ,return Bad Request and the errors
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    return res.status(400).json({success, errors: errors.array() });
   }
 
   //Check whether the user with the email exists already
   let u = await User.findOne({
     email: req.body.email
   }).catch(err => {
-    res.status(500).json({
+    res.status(500).json({success,
       error: "So sorry error occured on our side"
     })
   })
@@ -37,11 +37,11 @@ router.post('/createuser', [
 
   //IF the email of user already exists
   if (u) {
-    res.status(400).json({ error: "Sorry a user with this email already exists" })
+    res.status(400).json({success , error: "2Sorry a user with this email already exists" })
   }
   else {
 
-
+    
     //Creating user if the user doesn,t exists
     try {
       let user = await User.create({
@@ -51,6 +51,7 @@ router.post('/createuser', [
       })
         //IF any error occured on sever side
         .then(user => {
+          success = true;
           //Creating a JWT (json web token ) if user exists 
           let data = {
             id: user.id
@@ -59,12 +60,13 @@ router.post('/createuser', [
           console.log(data)
           const authtoken = jwt.sign(data, process.env.SECRET_KEY)
           console.log(authtoken)
-          res.json({ authtoken })
+          res.json({success, authtoken })
         })
     }
     catch (err) {
+      success = false;
       console.log(err)
-      res.status(500).send({ error: "So sorry error occured on our side" })
+      res.status(500).send({success, error: "So sorry error occured on our side" })
     }
   }
 })
@@ -81,22 +83,25 @@ router.post('/login',
   ], async (req, res) => {
     const errors = validationResult(req);
     //If the errors ,return Bad Request and the errors
+    let success = false;
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({success, errors: errors.array() });
     }
 
     const { email, password } = req.body;
     try {
       const user = await User.findOne({ email })
       if (user == null) {
-        return res.status(400).json({
+        return res.status(400).json({success,
           error: "Please try to login with correct cerendtials "
         })
       }
       const passwordCmp = await bcrypt.compare(password, user.password);
       console.log("Is the login request is true or false :" + passwordCmp)
+      
       if (!passwordCmp) {
-        return res.status(400).json({
+        success = false;        
+        return res.status(400).json({success,
           error: "Please try to login with correct cerendtials "
         })
       }
@@ -108,10 +113,11 @@ router.post('/login',
       data = JSON.stringify(data, null, 4)
       const authtoken = jwt.sign(data, process.env.SECRET_KEY)
       console.log(authtoken)
-      res.json({ authtoken })
+      success = true;
+      res.json({success, authtoken })
     } catch (err) {
       console.log(err)
-      res.status(500).send({ error: "So sorry error occured on our side" })
+      res.status(500).send({success,error: "So sorry error occured on our side" })
     }
   })
 
